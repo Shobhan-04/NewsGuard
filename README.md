@@ -1,360 +1,375 @@
-# NewsGuard — Fake News Pattern Detection (ML demo)
 
-NewsGuard is a small, end-to-end machine-learning project: an NLP classifier that
-estimates whether a news article **resembles the REAL or FAKE examples in a labelled
-training dataset**, returns an uncalibrated *model score*, lists the words and phrases
-that influenced the decision, and serves everything through a Flask web interface and a
-REST API.
+# NewsGuard — Fake News Pattern Detection
 
-> **NewsGuard is not a fact-checking service.** It does not verify claims, articles or
-> publishers. A prediction means "this text looks statistically like the examples the
-> model was trained on", nothing more. Do not use it to label people, outlets or content
-> as truthful or false.
+NewsGuard is an end-to-end NLP and machine-learning demo that classifies a news article as **REAL-like** or **FAKE-like** based on patterns learned from a labelled dataset. It provides a Flask web interface, a REST API, a model-derived score, and explanations showing which terms influenced the prediction.
 
-## 1. Problem statement
+> **Responsible-use notice:** NewsGuard is not a fact-checker. It does not verify claims, publishers, sources, dates, or external evidence. A prediction only indicates how closely the submitted text resembles examples in the training dataset. The model score is uncalibrated and must not be interpreted as the probability that an article is true or false.
 
-Misinformation detection is often framed as text classification. This project shows the
-whole workflow honestly: dataset hygiene (deduplication, leakage precautions),
-reproducible training, held-out evaluation, transparent explanations, a tested API, and
-deployment, while documenting what such a model can and cannot tell you.
+**Live demo:** [https://newsguard-v6vy.onrender.com](https://newsguard-v6vy.onrender.com)  
+**Health check:** [https://newsguard-v6vy.onrender.com/health](https://newsguard-v6vy.onrender.com/health)  
+**Repository:** [Shobhan-04/NewsGuard](https://github.com/Shobhan-04/NewsGuard)  
+**Deployment:** Live on Render (free instance; may spin down after inactivity).
 
-## 2. Features
+## Highlights
 
-* Single scikit-learn `Pipeline` (TF-IDF → classifier) so training and inference share
-  exactly the same preprocessing.
-* Logistic Regression baseline compared with a Linear SVM on **validation** data; the
-  chosen model is evaluated **once** on a held-out test set.
-* Dataset validation, label normalisation, deduplication (exact + near-duplicate),
-  conflicting-label removal, leakage precautions, optional time-based split.
-* Metrics computed at training time and stored in `models/model_metadata.json`
-  (accuracy, precision/recall/F1, per-class report, confusion matrix, ROC-AUC).
-* Transparent per-term explanations (TF-IDF weight × coefficient), not SHAP.
-* Responsive, accessible web UI (labels, keyboard navigation, skip link, dark mode,
-  loading/error states, clear button, responsible-use notices).
-* REST API with validation, payload limits, safe JSON errors and a health endpoint.
-* One shared `PredictionService` used by both web UI and API.
-* About 80 automated tests (79 at packaging time) that use a tiny temporary *synthetic* model (no dataset needed).
+- End-to-end workflow: dataset loading, validation, cleaning, deduplication, splitting, training, evaluation, and model export.
+- A shared scikit-learn pipeline using TF-IDF features and a linear classifier.
+- Logistic Regression baseline compared with Linear SVM using validation macro-F1.
+- Held-out test evaluation with accuracy, macro-F1, ROC-AUC, classification report, and confusion matrix.
+- Per-term explanations based on TF-IDF values and linear-model coefficients.
+- Flask web interface and JSON REST API powered by one shared prediction service.
+- Input validation, request-size limits, structured errors, and a health endpoint.
+- Automated tests that use a small temporary synthetic model and do not require the full dataset.
+- No database, paid API, or external API key required.
 
-## 3. Architecture
+## Evaluation
 
-```mermaid
-flowchart LR
-    U[User: web form or API client] --> V[Input validation]
-    V --> P["Pipeline: clean_text (inside TF-IDF)"]
-    P --> T[TF-IDF vectorizer]
-    T --> C[Linear classifier]
-    C --> S[Label + model score]
-    T --> E[Feature contributions]
-    C --> E
-    S --> R[JSON response / web page]
-    E --> R
+The following results are from the recorded training run using the **random stratified split**. They describe performance on a held-out subset of the same dataset—not real-world fact-checking accuracy.
+
+| Test metric | Result |
+|---|---:|
+| Test accuracy | **98.85%** |
+| Test macro-F1 | **98.84%** |
+| Test ROC-AUC | **0.9989** |
+| Test examples | **5,754** |
+| Selected model | **Linear SVM** |
+| Score method | Sigmoid of decision function (uncalibrated) |
+
+The run loaded 44,898 rows and retained 38,356 after cleaning. The final class counts were 17,452 FAKE and 20,904 REAL. The training pipeline removed rows with missing bodies, very short text, exact duplicates, and near-duplicates before creating the train/validation/test split.
+
+The test confusion matrix, with labels ordered as `FAKE`, `REAL`, was:
+
+| Actual \ Predicted | FAKE | REAL |
+|---|---:|---:|
+| FAKE | 2,579 | 39 |
+| REAL | 27 | 3,109 |
+
+These high scores may partly reflect source and writing-style differences in the dataset. See [Limitations](#limitations-and-responsible-use) before interpreting them.
+
+## How it works
+
+```text
+True.csv + Fake.csv
+        |
+        v
+Validate, clean and deduplicate
+        |
+        v
+Train / validation / test split
+        |
+        v
+Compare Logistic Regression and Linear SVM
+        |
+        v
+Select using validation macro-F1
+        |
+        v
+Evaluate once on held-out test data
+        |
+        v
+Save model pipeline + metadata
+        |
+        +----------------------+
+        |                      |
+        v                      v
+Flask web interface       REST API
+        |                      |
+        +----------+-----------+
+                   v
+          Shared PredictionService
+                   |
+                   v
+      Label + model score + explanation
 ```
 
-Training: `train.py` → load → validate/clean/deduplicate → split → fit on train → select on
-validation → test once → save `models/newsguard_pipeline.joblib` + `models/model_metadata.json`.
+### Explanation method
 
-## 4. Technology stack
+NewsGuard uses the linear model's TF-IDF feature values and coefficients to show terms that pushed the decision toward either class. These are explanations of the model's behaviour, not evidence that a claim is true or false. A highlighted word does not establish misinformation.
 
-Python 3.11+, pandas, NumPy, SciPy, scikit-learn (TF-IDF, Logistic Regression, LinearSVC),
-joblib, Flask, Gunicorn, python-dotenv, pytest. Frontend: HTML5, CSS3, vanilla JavaScript,
-Jinja templates. No database, Docker, authentication or paid API.
+The score is derived from the model's decision function using a sigmoid transformation. **It is not calibrated confidence and is not the probability that the article is factually correct.**
 
-## 5. Project structure
+## Technology stack
 
-```
+- **Language:** Python 3.11+
+- **Machine learning / NLP:** pandas, NumPy, SciPy, scikit-learn, TF-IDF
+- **Models:** Logistic Regression, Linear SVM (`LinearSVC`)
+- **Web:** Flask, Gunicorn
+- **Frontend:** HTML5, CSS3, vanilla JavaScript, Jinja templates
+- **Testing:** pytest
+- **Model persistence:** joblib
+
+## Repository structure
+
+```text
 NewsGuard/
-├── app.py                  # Flask app factory + web page (gunicorn app:app)
-├── api.py                  # REST API blueprint: /health, /api, /predict, error handlers
-├── predict.py              # Shared PredictionService (validation, loading, scoring)
-├── explain.py              # TF-IDF feature-contribution explanations
-├── preprocess.py           # build_text / clean_text (shared by training and inference)
-├── train.py                # Data loading, cleaning, splitting, training, evaluation, saving
-├── synthetic_data.py       # Tiny synthetic corpus for smoke tests ONLY
-├── config.py               # Settings (env-overridable), limits, training constants
-├── requirements.txt        # Pinned runtime dependencies
-├── requirements-dev.txt    # + pytest
-├── Procfile                # Gunicorn start command (Heroku-style hosts)
-├── render.yaml             # Optional Render blueprint
-├── pytest.ini  .gitignore  .env.example  LICENSE  README.md
-├── data/        README.md, .gitkeep        # put True.csv / Fake.csv here (git-ignored)
-├── models/      README.md, .gitkeep        # train.py writes the model + metadata here
-├── templates/   index.html
-├── static/      css/style.css, js/app.js
-├── tests/       conftest.py, test_preprocess.py, test_predict.py, test_api.py,
-│                test_explain.py, test_train.py
-└── notebooks/   exploratory_analysis.ipynb (optional)
+├── app.py                  # Flask web application
+├── api.py                  # REST API routes and error handling
+├── predict.py              # Shared prediction service and model loading
+├── explain.py              # Per-term model explanations
+├── preprocess.py           # Shared text construction and cleaning
+├── train.py                # Dataset preparation, training and evaluation
+├── synthetic_data.py       # Synthetic corpus for smoke tests only
+├── config.py               # Configuration and input limits
+├── requirements.txt        # Runtime dependencies
+├── requirements-dev.txt    # Development dependencies
+├── Procfile                # Production server command
+├── render.yaml             # Render Blueprint configuration
+├── pytest.ini
+├── .env.example
+├── data/
+│   └── README.md           # Dataset download and attribution notes
+├── models/
+│   ├── newsguard_pipeline.joblib
+│   ├── model_metadata.json
+│   └── README.md
+├── notebooks/
+│   └── exploratory_analysis.ipynb
+├── templates/
+│   └── index.html
+├── static/
+│   ├── css/style.css
+│   └── js/app.js
+└── tests/
+    ├── conftest.py
+    ├── test_api.py
+    ├── test_explain.py
+    ├── test_predict.py
+    ├── test_preprocess.py
+    └── test_train.py
 ```
 
-## 6. Dataset
+## Dataset
 
-Default: the **ISOT Fake News Dataset** (University of Victoria): `True.csv` (REAL, Reuters)
-and `Fake.csv` (FAKE, outlets flagged by fact-checkers). It is **not** included here; see
-[`data/README.md`](data/README.md) for download pointers, attribution and licence notes
-(I did not verify the licence text — check it yourself before redistributing anything).
+The default training workflow expects two files in `data/`:
 
-## 7. Installation
+- `True.csv` — REAL-labelled articles
+- `Fake.csv` — FAKE-labelled articles
 
-Requires **Python 3.11 or newer** (`pandas 3` needs 3.11+).
+The project uses the ISOT Fake News Dataset. Download instructions, attribution, and licensing notes are in [`data/README.md`](data/README.md). The CSV files are intentionally excluded from Git because of their size and separate dataset terms. Check the dataset's current licence and redistribution conditions before reusing or redistributing it.
+
+The labels are dataset labels, not independent verification of each article's claims. In particular, the dataset's REAL/FAKE categories are tied to its sources and collection process.
+
+## Setup
 
 ### Windows PowerShell
 
 ```powershell
-Expand-Archive .\NewsGuard.zip -DestinationPath . -Force
-Set-Location .\NewsGuard
-python --version                      # 3.11+; use `py -3.11` if `python` is not found
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1          # if blocked: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+# Run from the project directory
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
 python -m pip install --upgrade pip
 pip install -r requirements-dev.txt
 ```
+
+If PowerShell blocks environment activation, you can use this for the current user:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Then activate the virtual environment again.
 
 ### Linux / macOS
 
 ```bash
-unzip NewsGuard.zip && cd NewsGuard
-python3 -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
+
 python -m pip install --upgrade pip
 pip install -r requirements-dev.txt
 ```
 
-## 8. Run the tests
+## Run tests
 
-```powershell
-python -m pytest
+```bash
+python -m pytest -v
 ```
 
-Tests build a small synthetic model in a temp folder; no dataset, no network, a few seconds.
+The recorded project test run completed with **79 passed**. Tests use temporary test artifacts and do not require the full news dataset or network access.
 
-## 9. Dataset setup and training
+## Train the model
 
-1. Put `True.csv` and `Fake.csv` in `data/`.
-2. Train and evaluate:
+1. Download the dataset and place `True.csv` and `Fake.csv` in `data/`.
+2. Run training:
 
-```powershell
-python train.py                 # random stratified 70/15/15 split
-python train.py --split time    # optional: chronological split (harder, more realistic)
+```bash
+python train.py
 ```
 
-Smoke test **without** the dataset (synthetic, meaningless metrics, output goes to the
-git-ignored `models/_synthetic_smoke/`):
+By default, the pipeline uses a random stratified 70/15/15 train/validation/test split. For a chronological evaluation, try:
 
-```powershell
+```bash
+python train.py --split time
+```
+
+A time-based split is a useful additional check, but it does not eliminate source leakage by itself.
+
+Training compares Logistic Regression and Linear SVM on validation macro-F1, evaluates the selected model on the held-out test split, and saves:
+
+- `models/newsguard_pipeline.joblib`
+- `models/model_metadata.json`
+
+To smoke-test the training workflow without the real dataset:
+
+```bash
 python train.py --synthetic
 python predict.py --model-dir models\_synthetic_smoke --text "ministry committee parliament budget statement officials"
 ```
 
-Training writes `models/newsguard_pipeline.joblib` and `models/model_metadata.json`.
-The app never trains at start-up.
+**Synthetic mode is for pipeline smoke tests only. Its metrics are meaningless and must not be presented as project evaluation results.** The synthetic output directory is git-ignored.
 
-## 10. Run locally
-
-```powershell
-python app.py        # http://127.0.0.1:5000  (development server, local use only)
-```
-
-To try the app with the synthetic smoke model instead of a real one:
-
-```powershell
-$env:NEWSGUARD_MODEL_PATH = "models\_synthetic_smoke\newsguard_pipeline.joblib"
-$env:NEWSGUARD_METADATA_PATH = "models\_synthetic_smoke\model_metadata.json"
-python app.py
-```
-
-(The UI then shows a warning that the model was trained on synthetic data.) On Linux/macOS you
-can run the production server locally with `gunicorn app:app --bind 127.0.0.1:8000`;
-Gunicorn does not run on Windows.
-
-## 11. API documentation
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | `{"status": "ok"\|"degraded", "model_available": bool, "model_version": ..., "synthetic_model": ...}` — always HTTP 200; `degraded` means no usable model. No paths or secrets. |
-| GET | `/` | Web interface. Clients sending `Accept: application/json` get the API description instead. |
-| GET | `/api` | API description and limits (JSON). |
-| POST | `/predict` | Body: JSON with `title` and/or `text` (strings). |
-
-Status codes: **200** success · **400** invalid JSON / content type / fields / length ·
-**413** body larger than `MAX_CONTENT_LENGTH` (default 256 KiB) · **503** model unavailable ·
-**500** unexpected error (generic message; details only in server logs).
-Errors look like `{"error": {"code": "invalid_input", "message": "..."}}`.
-
-Input limits (configurable in `.env`): title ≤ 300 chars, text ≤ 20 000 chars, title+text ≥ 20 chars.
-Text with no vocabulary known to the model (e.g. non-English) is rejected with 400.
-
-### Example request / response
-
-```powershell
-$body = @{ title = "Example headline"; text = "Example article body with enough words to analyse." } | ConvertTo-Json
-Invoke-RestMethod -Uri http://127.0.0.1:5000/predict -Method Post -ContentType "application/json" -Body $body
-```
-
-```bash
-curl -X POST http://127.0.0.1:5000/predict -H "Content-Type: application/json" \
-     -d '{"title": "Example headline", "text": "Example article body ..."}'
-```
-
-Response shape (**values below are placeholders for illustration; real values come from the model**):
-
-```json
-{
-  "prediction": "<REAL|FAKE>",
-  "model_score": "<0-100>",
-  "score_type": "model_confidence",
-  "score_note": "model_score is the model's uncalibrated confidence ...",
-  "explanation": [
-    {"term": "<word or phrase>", "pushes_toward": "<REAL|FAKE>",
-     "supports_prediction": true, "contribution": "<number>"}
-  ],
-  "explanation_note": "...",
-  "model_version": "1.0.0",
-  "disclaimer": "...",
-  "metadata": {"classes": ["FAKE", "REAL"], "score_method": "predict_proba",
-               "known_terms": "<int>", "input_characters": "<int>",
-               "trained_on_synthetic_data": false, "trained_at_utc": "..."}
-}
-```
-
-## 12. Evaluation metrics
-
-**No metrics are published in this README.** They must come from your own training run.
-After `python train.py`, read them from `models/model_metadata.json`:
+To print the saved test metrics after training:
 
 ```powershell
 python -c "import json; m=json.load(open('models/model_metadata.json')); print(json.dumps(m['test'], indent=2))"
 ```
 
-The file also holds dataset size/class counts, rows removed during cleaning, split sizes,
-validation scores of both candidates, and the training configuration. When you publish
-results, copy them from that file and state the split strategy (random vs time).
+## Run locally
 
-*(Paste your results here after training. Do not edit numbers by hand.)*
-
-## 13. Explanation methodology
-
-The classifier is linear, so the decision value is `intercept + Σ (tf-idf_j × coefficient_j)`.
-For each term in the submitted article, `tf-idf × coefficient` is its exact additive
-contribution. scikit-learn stores one coefficient vector for the two classes: positive values
-push toward `REAL` (`classes_[1]`), negative toward `FAKE`. The API reports each term's
-magnitude, the label it pushes toward, and whether that supports the predicted label
-(up to 6 supporting + 4 opposing terms). The intercept is not shown.
-These are descriptions of model behaviour, not causal evidence; a highlighted word does not
-prove an article is misinformation.
-
-The **model score** is the model's probability for its predicted label (Logistic Regression)
-or a sigmoid of the margin (Linear SVM). Either way it is **uncalibrated confidence**, not the
-probability that the article is true or false. No calibration is applied.
-
-## 14. Screenshots
-
-*Placeholders — add real screenshots after running the app:*
-
-* `docs/screenshot-home.png` — _not yet captured_
-* `docs/screenshot-result.png` — _not yet captured_
-
-## 15. GitHub publishing
-
-```powershell
-git init -b main                       # if this folder is not yet a repository
-git add .
-git status                             # review carefully
+```bash
+python app.py
 ```
 
-Checks **before every commit**:
+Open [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
-```powershell
-git ls-files | Select-String -Pattern "\.env$|\.csv$|\.venv|__pycache__"          # expect no output (.env.example is fine)
-git ls-files | ForEach-Object { Get-Item $_ } | Where-Object { $_.Length -gt 5MB }  # large files; GitHub blocks >100 MB
-git grep -nI -E "(api[_-]?key|secret|password|token)\s*[:=]"                       # expect nothing sensitive
+The Flask development server is intended for local testing, not production hosting. The app loads the saved model at startup; it does not train a model when the server starts.
+
+## REST API
+
+### Health check
+
+```http
+GET /health
 ```
 
-Never commit: `.env`, the dataset CSVs (licence not verified), `.venv`, caches, or
-`models/_synthetic_smoke/`. Open `LICENSE` and replace `[Your Name]`.
+Example response:
 
-After training on the **real** dataset, the model files appear as new files — they are
-required for deployment, so commit them once you have checked their size
-(`Get-ChildItem models | Select Name, Length`).
-
-```powershell
-git commit -m "Initial commit: NewsGuard"
-git remote add origin https://github.com/<your-username>/NewsGuard.git   # create the empty repo on github.com first
-git push -u origin main
+```json
+{
+  "status": "ok",
+  "model_available": true,
+  "model_version": "1.0.0",
+  "synthetic_model": false
+}
 ```
 
-## 16. Deployment
+`status` can be `ok` or `degraded`. The endpoint returns HTTP 200 even when the model is unavailable; check `model_available` to confirm the model loaded.
 
-Public URL: **not deployed yet** — add it here only after you have tested it.
+### API description
 
-Constraints to know (verify on the host's current docs before relying on them): free web
-services of the kind Render offers have a small RAM allowance (commonly 512 MB), sleep after
-idle time (slow first request), may restart at any time and have an ephemeral disk. Hence:
-the model is a read-only file committed to the repo, loaded at start-up, never retrained; one
-Gunicorn worker; TF-IDF is capped at 50 000 features.
+```http
+GET /api
+```
 
-Example with Render (Web Service from your GitHub repo):
+### Predict
 
-| Setting | Value |
-|---------|-------|
-| Build command | `pip install -r requirements.txt` |
-| Start command | `gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 60` |
-| Health check path | `/health` |
-| Environment | `PYTHON_VERSION` = a 3.11.x version (see Render's current Python-version docs) |
+```http
+POST /predict
+Content-Type: application/json
+```
 
-`render.yaml` encodes the same settings; `Procfile` serves Heroku-style hosts (they additionally
-need a `runtime.txt` such as `python-3.11.x`, if the host requires one). Debug mode stays off
-unless you set `FLASK_DEBUG=1`.
-
-Environment variables (all optional): `PORT` (set by host), `HOST`, `FLASK_DEBUG`,
-`NEWSGUARD_MODEL_PATH`, `NEWSGUARD_METADATA_PATH`, `MAX_CONTENT_LENGTH`, `MAX_TEXT_CHARS`,
-`MAX_TITLE_CHARS`, `MIN_INPUT_CHARS`. No secrets or API keys are required.
-
-Verify a deployment (replace the URL):
+Example PowerShell request:
 
 ```powershell
-$base = "https://<your-service-url>"
+$body = @{
+    title = "Example headline"
+    text  = "Example article body with enough English text for analysis."
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:5000/predict" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+The request accepts a `title`, `text`, or both. Inputs must meet the configured length limits and contain vocabulary the model recognises. The response includes a predicted label, an uncalibrated model score, explanation terms, model version, metadata, and a responsible-use disclaimer.
+
+Typical response fields include:
+
+- `prediction` — `REAL` or `FAKE`
+- `model_score` — model-derived score from 0 to 100; not a factual probability
+- `score_type` and `score_note` — describe the score's meaning and limitation
+- `explanation` — terms pushing toward or against the predicted label
+- `model_version`, `metadata`, and `disclaimer`
+
+### Error handling
+
+The API validates request content type, JSON structure, input fields, and input lengths. Expected errors include:
+
+- `400` — invalid JSON, content type, fields, or input
+- `413` — request body exceeds the configured limit
+- `503` — model unavailable
+- `500` — unexpected server error (generic response; details remain in server logs)
+
+Default limits are configurable through environment variables. See `.env.example` and `config.py`.
+
+## Deployment
+
+NewsGuard is deployed on Render.
+
+- **Live application:** [https://newsguard-v6vy.onrender.com](https://newsguard-v6vy.onrender.com)
+- **Health endpoint:** [https://newsguard-v6vy.onrender.com/health](https://newsguard-v6vy.onrender.com/health)
+- **Hosting configuration:** [`render.yaml`](render.yaml) and [`Procfile`](Procfile)
+
+The service uses Gunicorn and loads the committed trained model at startup; it does not retrain the model during deployment. The Render free instance may spin down after inactivity, so the first request after a quiet period can be delayed.
+
+### Verify the live service
+
+Run these commands in PowerShell:
+
+```powershell
+$base = "https://newsguard-v6vy.onrender.com"
+
 Invoke-WebRequest "$base/" | Select-Object StatusCode
 Invoke-RestMethod "$base/health"
-Invoke-RestMethod "$base/predict" -Method Post -ContentType "application/json" -Body (@{ text = "Paste a realistic English news paragraph here." } | ConvertTo-Json)
 ```
 
-`/health` must show `"model_available": true` and `"synthetic_model": false`.
+The health response should report `status: ok`, `model_available: true`, and `synthetic_model: false`. Also submit a sample article through the web interface to verify the prediction workflow.
 
-## 17. Known limitations and responsible use
+The deployed URL is Render-provided; no separate custom domain is configured in this README.
 
-* **Not fact-checking.** The model sees only words, no sources, images, dates or external facts.
-* **Source/style leakage.** ISOT's classes come from different outlets. Cleaning removes datelines,
-  URLs and source markers, but style differences remain, so very high test scores mostly show the model
-  separates *these sources*. Expect much worse performance on other publishers, topics, languages
-  and years. Use `--split time` for a harsher estimate; a grouped-by-source split would be better still
-  but ISOT has no source column.
-* **Random split optimism.** Articles on the same events appear in train and test.
-* **Labels are noisy proxies.** "FAKE" = "from a flagged outlet", "REAL" = "from Reuters".
-* **Scores are uncalibrated** and can be confidently wrong. Satire, opinion, breaking news and
-  non-English text are out of scope.
-* **Pickle safety.** Only load model files you trained yourself.
-* **Possible bias.** The model can encode topical and political associations of its sources.
+## Limitations and responsible use
 
-## 18. Troubleshooting
+- **Not fact-checking:** the system does not compare claims with trusted sources or external evidence.
+- **Source/style leakage:** the dataset's classes are associated with different publishers and writing styles. Removing URLs, datelines, and source markers cannot remove all such signals.
+- **Random-split optimism:** articles about the same events may appear across train and test sets, inflating apparent generalisation.
+- **Dataset-specific labels:** `FAKE` and `REAL` are proxies based on the dataset's labelling and collection method, not fresh claim-by-claim verification.
+- **Uncalibrated scores:** the model can be confidently wrong; the score is not the probability that a story is true.
+- **Limited coverage:** the dataset is mainly English-language news from a particular period and context. Performance may degrade on new publishers, topics, languages, satire, opinion, or breaking news.
+- **Potential bias:** topical and political associations in the source data can influence predictions.
+- **Model file safety:** only load model files you trained or otherwise trust. Joblib/pickle-based files can execute code when loaded.
 
-| Symptom | Fix |
-|---------|-----|
-| `python` not found | Use `py -3.11` (Windows) or install Python 3.11+. |
-| Activation blocked | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then activate again. |
-| `ModuleNotFoundError` | Activate `.venv` and run `pip install -r requirements-dev.txt`; run commands from the project root. |
-| `Dataset error: 'True.csv' not found` | Put the files in `data/` or pass `--data-dir`. |
-| `/health` says `degraded`, `/predict` returns 503 | No model: run `python train.py` (or set `NEWSGUARD_MODEL_PATH`). On a host, commit the model files. |
-| 503 after upgrading packages | Pickle/version mismatch: retrain with the same pinned `requirements.txt`. |
-| 400 "no terms the model recognises" | Input is not English news-like text. |
-| Port already in use | Set `PORT=5001` in `.env` or the environment. |
-| First request very slow on a free host | The service was asleep; retry. |
-| `gunicorn` fails on Windows | Expected; use `python app.py` locally. |
+Do not use NewsGuard as the sole basis for publishing decisions, moderation, reputational judgements, or labelling people and publishers.
 
-## 19. Future improvements
+## Troubleshooting
 
-Source-grouped or time-based evaluation on more datasets; probability calibration evaluated on
-separate validation data; cross-dataset testing; multilingual support; rate limiting; request
-logging/metrics; batch endpoint.
+| Problem | What to check |
+|---|---|
+| `python` not found | Install Python 3.11+; on Windows, try `py -3.11`. |
+| PowerShell blocks activation | Use the execution-policy command in [Setup](#setup), or run the environment's Python directly. |
+| `ModuleNotFoundError` | Activate `.venv` and run `pip install -r requirements-dev.txt` from the project root. |
+| `True.csv` or `Fake.csv` not found | Put both files in `data/`, or pass the appropriate `--data-dir` argument. |
+| `/health` reports `model_available: false` | Train the model or check `NEWSGUARD_MODEL_PATH` and `NEWSGUARD_METADATA_PATH`. |
+| Prediction returns `503` | Check model loading and package versions; retrain using the pinned dependencies if necessary. |
+| Input has no recognised terms | Use English news-like text containing terms represented in the training vocabulary. |
+| Port 5000 is already in use | Set `PORT` to another port if supported by your local configuration, or stop the other process. |
+| Gunicorn fails on Windows | Expected; use `python app.py` locally. Use Gunicorn on supported deployment hosts. |
+| First request on a free host is slow | The service may have been idle or restarted; retry and check the provider's current plan behaviour. |
 
-## 20. Author and repository
+## Future improvements
 
-Author: `<your name>` · Repository: `https://github.com/<your-username>/NewsGuard` (replace after publishing) ·
-Licence: MIT (code only; the dataset has its own terms).
+- Evaluate with time-based and source-grouped splits, plus external datasets.
+- Test cross-dataset generalisation on publishers and time periods not seen in training.
+- Evaluate probability calibration using a separate validation set.
+- Add multilingual support only with suitable training and evaluation data.
+- Add request metrics, rate limiting, and operational monitoring.
+
+## Author
+
+**Shobhan Satpathy**  
+GitHub: [@Shobhan-04](https://github.com/Shobhan-04)  
+Project: [NewsGuard](https://github.com/Shobhan-04/NewsGuard)
+
+**Licence:** See [`LICENSE`](LICENSE) for code licensing. Dataset terms are separate and must be checked independently.
