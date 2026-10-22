@@ -1,60 +1,28 @@
-# Dataset instructions
 
-**The dataset is not included in this repository.** Its redistribution terms were
-not verified, so the CSV files are git-ignored. Download it yourself and place
-the files in this folder.
+## Where to get it
 
-## ISOT Fake News Dataset (default)
+1. **Kaggle (download the dataset):** [Fake and Real News Dataset — ISOT Fake News Dataset](https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset)
+2. **Official University of Victoria ISOT page:** [ISOT Datasets](https://www.uvic.ca/engineering/ece/isot/datasets/index.php). If the page has moved, search for "ISOT Fake News Dataset University of Victoria".
 
-Expected files (names are matched case-insensitively):
+### Download instructions
 
-| File | Label assigned by `train.py` | Columns |
-|------|------------------------------|---------|
-| `True.csv` | `REAL` (articles crawled from Reuters.com) | `title, text, subject, date` |
-| `Fake.csv` | `FAKE` (articles from sites flagged by fact-checkers) | `title, text, subject, date` |
+1. Open the [Kaggle dataset page](https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset).
+2. Sign in to Kaggle if prompted.
+3. Download the dataset ZIP file and extract it.
+4. Copy `True.csv` and `Fake.csv` into your project's `data/` directory.
+5. Confirm the files are located at:
 
-Neither file has a label column; the label comes from the file name.
+   ```text
+   NewsGuard/
+   └── data/
+       ├── True.csv
+       └── Fake.csv
+   ```
 
-**Where to get it**
+6. Run training from the project root:
 
-1. The University of Victoria ISOT lab publishes the dataset. Start from the
-   official page (`https://www.uvic.ca/engineering/ece/isot/datasets/index.php`; if it
-   has moved, search for "ISOT Fake News Dataset University of Victoria").
-2. The same files are widely mirrored on Kaggle. **Read the licence/terms on the
-   page you download from** and follow any attribution the authors request.
+   ```powershell
+   python train.py
+   ```
 
-I have not confirmed the licence text; check it before redistributing the data or
-publishing derived datasets.
-
-**Attribution**: Ahmed, H., Traore, I., Saad, S. (2017). *Detection of Online Fake
-News Using N-Gram Analysis and Machine Learning Techniques.* In: Traore I., Woungang
-I., Awad A. (eds) Intelligent, Secure, and Dependable Systems in Distributed and Cloud
-Environments (ISDDC 2017), LNCS 10618, Springer, pp. 127-138.
-DOI: 10.1007/978-3-319-69155-8_9
-
-## How NewsGuard treats the data
-
-* `subject` and `date` are **not** model features. The two files use different
-  subject values, which would leak the label. `date` is read only for
-  `python train.py --split time`.
-* Reuters datelines (e.g. `WASHINGTON (Reuters) -`), the word "Reuters", URLs,
-  @handles and a few source markers are removed (`preprocess.py`).
-* Rows with missing/empty body, very short articles, exact duplicates and
-  near-duplicates (same first 300 alphanumeric characters) are removed
-  **before** splitting. Duplicates with conflicting labels are dropped entirely.
-
-## Using your own CSV
-
-```powershell
-python train.py --csv data\my_articles.csv
-```
-
-Required columns: `text`, `label`. Optional: `title`, `date`. Accepted label
-values (case-insensitive): `real`, `true`, `reliable`, `fake`, `false`, `unreliable`.
-
-## Known dataset limitations
-
-* Mostly English-language US political/world news from roughly 2015-2018.
-* The classes come from different *sources*, so a model can learn source style
-  rather than truthfulness.
-* "FAKE" means "from a flagged outlet", not "every claim was checked and false".
+**Licence and attribution:** The Kaggle listing identifies the dataset licence as **CC BY-NC-SA 4.0**. Review the licence terms on the download page before redistributing the dataset or derived datasets, and follow the authors' attribution requirements. The licence of the dataset does not automatically determine the licence of this project's code.
