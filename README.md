@@ -231,7 +231,7 @@ python -c "import json; m=json.load(open('models/model_metadata.json')); print(j
 python app.py
 ```
 
-Open [http://127.0.0.1:5000](http://127.0.0.1:5000).
+Open [[http://127.0.0.1:5000](http://127.0.0.1:5000).]
 
 The Flask development server is intended for local testing, not production hosting. The app loads the saved model at startup; it does not train a model when the server starts.
 
@@ -358,13 +358,16 @@ Do not use NewsGuard as the sole basis for publishing decisions, moderation, rep
 | Gunicorn fails on Windows | Expected; use `python app.py` locally. Use Gunicorn on supported deployment hosts. |
 | First request on a free host is slow | The service may have been idle or restarted; retry and check the provider's current plan behaviour. |
 
-## Future improvements
+## Future Improvements
 
-- Evaluate with time-based and source-grouped splits, plus external datasets.
-- Test cross-dataset generalisation on publishers and time periods not seen in training.
-- Evaluate probability calibration using a separate validation set.
-- Add multilingual support only with suitable training and evaluation data.
-- Add request metrics, rate limiting, and operational monitoring.
+- **Robust Evaluation:** Evaluate using time-based and source-grouped data splits to reduce data leakage and assess generalisation.
+- **Cross-Dataset Testing:** Test on independent datasets containing unseen publishers, topics, and time periods.
+- **Probability Calibration:** Evaluate score calibration and apply methods such as Platt scaling using validation data, if appropriate.
+- **Explainability:** Enhance term-level explanations with SHAP-based feature attribution and global feature-importance analysis.
+- **Feature Engineering:** Experiment with readability, sentiment, and alternative text representations to measure their impact on performance.
+- **Multilingual Support:** Extend to additional languages using suitable training data and language-specific evaluation.
+- **API Reliability:** Add rate limiting, request metrics, structured logging, and operational monitoring.
+- **Model Tracking:** Integrate MLflow to track experiments, evaluation metrics, and model versions.
 
 ## Author
 
