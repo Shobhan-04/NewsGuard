@@ -5,9 +5,9 @@ NewsGuard is an end-to-end NLP and machine-learning demo that classifies a news 
 
 > **Responsible-use notice:** NewsGuard is not a fact-checker. It does not verify claims, publishers, sources, dates, or external evidence. A prediction only indicates how closely the submitted text resembles examples in the training dataset. The model score is uncalibrated and must not be interpreted as the probability that an article is true or false.
 
-**Live demo:** [https://newsguard-v6vy.onrender.com](https://newsguard-v6vy.onrender.com)  
-**Health check:** [https://newsguard-v6vy.onrender.com/health](https://newsguard-v6vy.onrender.com/health)  
-**Repository:** [Shobhan-04/NewsGuard](https://github.com/Shobhan-04/NewsGuard)  
+**Live demo:** [[https://newsguard-v6vy.onrender.com](https://newsguard-v6vy.onrender.com)]  
+**Health check:** [[https://newsguard-v6vy.onrender.com/health](https://newsguard-v6vy.onrender.com/health)]  
+**Repository:** [[Shobhan-04/NewsGuard](https://github.com/Shobhan-04/NewsGuard)]  
 **Deployment:** Live on Render (free instance; may spin down after inactivity).
 
 ## Highlights
@@ -309,9 +309,9 @@ Default limits are configurable through environment variables. See `.env.example
 
 NewsGuard is deployed on Render.
 
-- **Live application:** [https://newsguard-v6vy.onrender.com](https://newsguard-v6vy.onrender.com)
-- **Health endpoint:** [https://newsguard-v6vy.onrender.com/health](https://newsguard-v6vy.onrender.com/health)
-- **Hosting configuration:** [`render.yaml`](render.yaml) and [`Procfile`](Procfile)
+- **Live application:** [[https://newsguard-v6vy.onrender.com](https://newsguard-v6vy.onrender.com)]
+- **Health endpoint:** [[https://newsguard-v6vy.onrender.com/health](https://newsguard-v6vy.onrender.com/health)]
+- **Hosting configuration:** [[`render.yaml`](render.yaml)] and [[`Procfile`](Procfile)]
 
 The service uses Gunicorn and loads the committed trained model at startup; it does not retrain the model during deployment. The Render free instance may spin down after inactivity, so the first request after a quiet period can be delayed.
 
@@ -369,7 +369,7 @@ Do not use NewsGuard as the sole basis for publishing decisions, moderation, rep
 ## Author
 
 **Shobhan Satpathy**  
-GitHub: [@Shobhan-04](https://github.com/Shobhan-04)  
-Project: [NewsGuard](https://github.com/Shobhan-04/NewsGuard)
+GitHub: [[@Shobhan-04](https://github.com/Shobhan-04)]  
+Project: [[NewsGuard](https://github.com/Shobhan-04/NewsGuard)]
 
 **Licence:** See [`LICENSE`](LICENSE) for code licensing. Dataset terms are separate and must be checked independently.
