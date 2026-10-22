@@ -1,0 +1,235 @@
+{
+  "model_name": "NewsGuard",
+  "model_version": "1.0.0",
+  "trained_at_utc": "2026-10-22T09:11:27+00:00",
+  "synthetic_data": false,
+  "classes": [
+    "FAKE",
+    "REAL"
+  ],
+  "positive_class": "REAL",
+  "score_type": "model_confidence",
+  "score_method": "sigmoid_of_decision_function",
+  "selected_model": "linear_svm",
+  "selection_metric": "validation macro F1",
+  "n_features": 50000,
+  "dataset": {
+    "rows_loaded": 44898,
+    "class_counts_loaded": {
+      "FAKE": 23481,
+      "REAL": 21417
+    },
+    "removed_missing_body": 631,
+    "removed_too_short": 9,
+    "removed_exact_duplicates": 5610,
+    "removed_near_duplicates": 292,
+    "removed_conflicting_label_duplicates": 0,
+    "rows_final": 38356,
+    "class_counts_final": {
+      "FAKE": 17452,
+      "REAL": 20904
+    },
+    "majority_to_minority_ratio": 1.198
+  },
+  "split": {
+    "strategy": "random",
+    "seed": 42,
+    "train_size": 26848,
+    "train_class_counts": {
+      "FAKE": 12216,
+      "REAL": 14632
+    },
+    "validation_size": 5754,
+    "validation_class_counts": {
+      "FAKE": 2618,
+      "REAL": 3136
+    },
+    "test_size": 5754,
+    "test_class_counts": {
+      "FAKE": 2618,
+      "REAL": 3136
+    }
+  },
+  "candidates": {
+    "logistic_regression": {
+      "params": {
+        "C": 1.0,
+        "class_weight": "None",
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": 0.0,
+        "max_iter": 1000,
+        "n_jobs": "None",
+        "penalty": "deprecated",
+        "random_state": 42,
+        "solver": "liblinear",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "validation": {
+        "n_samples": 5754,
+        "accuracy": 0.9819256169621133,
+        "macro_precision": 0.9824200260840257,
+        "macro_recall": 0.9811785509658408,
+        "macro_f1": 0.9817552648861045,
+        "per_class": {
+          "FAKE": {
+            "precision": 0.9872093023255814,
+            "recall": 0.9728800611153552,
+            "f1": 0.9799923047325895,
+            "support": 2618
+          },
+          "REAL": {
+            "precision": 0.9776307498424701,
+            "recall": 0.9894770408163265,
+            "f1": 0.9835182250396196,
+            "support": 3136
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "FAKE",
+            "REAL"
+          ],
+          "matrix": [
+            [
+              2547,
+              71
+            ],
+            [
+              33,
+              3103
+            ]
+          ],
+          "note": "rows = true label, columns = predicted label"
+        },
+        "roc_auc": 0.9977715112018832,
+        "roc_auc_positive_class": "REAL"
+      }
+    },
+    "linear_svm": {
+      "params": {
+        "C": 1.0,
+        "class_weight": "None",
+        "dual": "auto",
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "loss": "squared_hinge",
+        "max_iter": 5000,
+        "multi_class": "ovr",
+        "penalty": "l2",
+        "random_state": 42,
+        "tol": 0.0001,
+        "verbose": 0
+      },
+      "validation": {
+        "n_samples": 5754,
+        "accuracy": 0.9909628084810567,
+        "macro_precision": 0.9910144482466146,
+        "macro_recall": 0.9907627823856815,
+        "macro_f1": 0.990886651494403,
+        "per_class": {
+          "FAKE": {
+            "precision": 0.9915708812260536,
+            "recall": 0.988540870893812,
+            "f1": 0.990053557765876,
+            "support": 2618
+          },
+          "REAL": {
+            "precision": 0.9904580152671756,
+            "recall": 0.9929846938775511,
+            "f1": 0.9917197452229299,
+            "support": 3136
+          }
+        },
+        "confusion_matrix": {
+          "labels": [
+            "FAKE",
+            "REAL"
+          ],
+          "matrix": [
+            [
+              2588,
+              30
+            ],
+            [
+              22,
+              3114
+            ]
+          ],
+          "note": "rows = true label, columns = predicted label"
+        },
+        "roc_auc": 0.998731188904133,
+        "roc_auc_positive_class": "REAL"
+      }
+    }
+  },
+  "test": {
+    "n_samples": 5754,
+    "accuracy": 0.9885297184567258,
+    "macro_precision": 0.9886252378198683,
+    "macro_recall": 0.9882467191422023,
+    "macro_f1": 0.9884315693226093,
+    "per_class": {
+      "FAKE": {
+        "precision": 0.9896392939370683,
+        "recall": 0.9851031321619557,
+        "f1": 0.9873660030627871,
+        "support": 2618
+      },
+      "REAL": {
+        "precision": 0.9876111817026684,
+        "recall": 0.9913903061224489,
+        "f1": 0.9894971355824316,
+        "support": 3136
+      }
+    },
+    "confusion_matrix": {
+      "labels": [
+        "FAKE",
+        "REAL"
+      ],
+      "matrix": [
+        [
+          2579,
+          39
+        ],
+        [
+          27,
+          3109
+        ]
+      ],
+      "note": "rows = true label, columns = predicted label"
+    },
+    "roc_auc": 0.9989052439157481,
+    "roc_auc_positive_class": "REAL"
+  },
+  "config": {
+    "random_state": 42,
+    "tfidf": {
+      "ngram_range": [
+        1,
+        2
+      ],
+      "max_features": 50000,
+      "min_df": 2,
+      "sublinear_tf": true,
+      "stop_words": "english"
+    },
+    "min_article_chars": 50,
+    "near_duplicate_prefix_chars": 300
+  },
+  "environment": {
+    "python": "3.11.9",
+    "scikit_learn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.4.6"
+  },
+  "notes": [
+    "Scores describe resemblance to the labelled training data only; this is not fact-checking.",
+    "Test metrics come from a single evaluation of the selected model on held-out data.",
+    "Random splits can overstate generalisation when articles share sources or topics."
+  ]
+}

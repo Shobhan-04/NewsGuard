@@ -1,0 +1,65 @@
+# Environments and secrets
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Dataset files (check the licence before ever redistributing them)
+data/*.csv
+data/*.zip
+data/*.tsv
+data/*.json
+
+# Synthetic smoke-test models must never be committed or deployed
+models/_synthetic_smoke/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# Local Python environment and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+
+# Dataset files: do not upload large CSVs
+data/*.csv
+
+# Synthetic smoke-test artifacts
+models/_synthetic_smoke/
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Large datasets
+data/*.csv
+
+# Synthetic test artifacts
+models/_synthetic_smoke/

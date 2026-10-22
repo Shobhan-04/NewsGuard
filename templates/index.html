@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }} - Fake news pattern detector (ML demo)</title>
+  <meta name="description" content="Machine-learning demo that shows whether a news article resembles REAL or FAKE examples from a labelled dataset. Not a fact-checker.">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <h1>{{ app_name }}</h1>
+    <p class="tagline">Does this article <em>resemble</em> REAL or FAKE examples a model has seen? A machine-learning demo.</p>
+  </header>
+
+  <main id="main">
+    <div class="notice" role="note">
+      <strong>This is not a fact-checker.</strong> {{ disclaimer }}
+    </div>
+
+    <noscript><p class="error-box">This page needs JavaScript to submit articles to the prediction API.</p></noscript>
+
+    <form id="analyze-form" data-predict-url="{{ url_for('api.predict') }}"
+          data-max-text="{{ max_text }}" data-min-chars="{{ min_chars }}" novalidate>
+      <div class="field">
+        <label for="title">Article title <span class="hint">(optional)</span></label>
+        <input id="title" name="title" type="text" maxlength="{{ max_title }}" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="text">Article text</label>
+        <textarea id="text" name="text" rows="12" maxlength="{{ max_text }}" aria-describedby="text-help char-count" required></textarea>
+        <p id="text-help" class="hint">Paste English news text (at least {{ min_chars }} characters, up to {{ max_text }}).</p>
+        <p id="char-count" class="hint" aria-live="off">0 / {{ max_text }} characters</p>
+      </div>
+
+      <div class="actions">
+        <button id="submit-btn" type="submit">Analyse article</button>
+        <button id="clear-btn" type="button" class="secondary">Clear</button>
+      </div>
+    </form>
+
+    <p id="status" class="status" role="status" aria-live="polite" hidden></p>
+    <div id="error" class="error-box" role="alert" hidden></div>
+
+    <section id="result" class="result" aria-labelledby="result-heading" hidden tabindex="-1">
+      <h2 id="result-heading">Model result</h2>
+      <p class="prediction">
+        The model's prediction: this text resembles the
+        <span id="prediction-label" class="label-badge"></span>
+        examples in its training data.
+      </p>
+
+      <div class="score-block">
+        <p><strong>Model score:</strong> <span id="score-value"></span> / 100</p>
+        <div class="bar" aria-hidden="true"><div id="score-bar" class="bar-fill"></div></div>
+        <p class="hint">{{ score_note }}</p>
+      </div>
+
+      <div class="explanations">
+        <h3>Influential words and phrases</h3>
+        <div class="columns">
+          <div>
+            <h4 id="support-heading">Pushed toward the prediction</h4>
+            <ul id="support-list" aria-labelledby="support-heading"></ul>
+          </div>
+          <div>
+            <h4 id="oppose-heading">Pushed against the prediction</h4>
+            <ul id="oppose-list" aria-labelledby="oppose-heading"></ul>
+          </div>
+        </div>
+        <p id="explanation-note" class="hint"></p>
+      </div>
+
+      <p id="meta" class="hint"></p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p><strong>Responsible use.</strong> {{ disclaimer }} Do not use this output to label people, publishers or content as truthful or false.</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Optional Render Blueprint. Verify current Python-version and free-tier details in
+# Render's documentation before relying on this file.
+services:
+  - type: web
+    name: newsguard
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 60
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9

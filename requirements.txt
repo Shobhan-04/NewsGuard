@@ -1,0 +1,10 @@
+# Runtime dependencies (pinned to the versions the test-suite was run with).
+# The saved model is a pickle: train and serve with the SAME scikit-learn version.
+flask==3.1.3
+gunicorn==26.2.0
+scikit-learn==1.9.1
+scipy==1.17.1
+pandas==3.0.6
+numpy==2.4.6
+joblib==1.6.0
+python-dotenv==1.2.4
